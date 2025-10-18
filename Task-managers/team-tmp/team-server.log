@@ -1,0 +1,5 @@
+
+> team-task-manager-fixed@1.0.0 start
+> node Backend/server.js
+
+Server on http://localhost:3000
