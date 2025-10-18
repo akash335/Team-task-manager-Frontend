@@ -1,7 +1,7 @@
 node_modules/
-.DS_Store
 .env
+.DS_Store
+*.log
 Backend/team.db*
 *.sqlite*
 *.db
-*.log
