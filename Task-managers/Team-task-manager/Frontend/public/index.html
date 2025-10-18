@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Task Manager</title>
+<style>
+body{margin:0;background:#0b1020;color:#eef1ff;font:16px/1.6 system-ui}
+.wrap{max-width:960px;margin:32px auto;padding:0 16px}
+.card{background:#141b31;border:1px solid rgba(110,168,255,.2);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);margin-bottom:16px}
+.card>.in{padding:16px}
+h2{margin:0 0 12px;color:#a7b0d3}
+label{display:block;font-size:13px;color:#a7b0d3;margin:8px 0 6px}
+input,textarea,select{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(110,168,255,.34);background:#0b1020;color:#eef1ff}
+.btn{padding:10px 14px;border:0;border-radius:12px;font-weight:800;cursor:pointer}
+.primary{background:linear-gradient(180deg,#6ea8ff,#4d8dff);color:#fff}
+.ghost{background:transparent;border:1px dashed rgba(110,168,255,.45);color:#a7b0d3}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:720px){.row{grid-template-columns:1fr}}
+.list .item{display:grid;grid-template-columns: auto 1fr auto;gap:10px;align-items:start;padding:12px;border-bottom:1px dashed rgba(110,168,255,.22)}
+.small{color:#a7b0d3;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Team Task Manager</h1>
+
+  <section class="card" id="auth">
+    <div class="in">
+      <h2>Sign up / Login</h2>
+      <div class="row">
+        <div><label>Name</label><input id="name" placeholder="Your name"></div>
+        <div><label>Email</label><input id="email" type="email" placeholder="you@example.com"></div>
+      </div>
+      <div class="row">
+        <div><label>Password</label><input id="password" type="password" placeholder="••••••"></div>
+        <div style="align-self:end;display:flex;gap:10px">
+          <button class="btn primary" id="signup">Sign up</button>
+          <button class="btn ghost" id="login">Login</button>
+        </div>
+      </div>
+      <div id="msg" class="small"></div>
+    </div>
+  </section>
+
+  <section class="card" id="app" style="display:none">
+    <div class="in">
+      <h2>Tasks</h2>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+        <select id="flt">
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="in_progress">In progress</option>
+          <option value="completed">Completed</option>
+        </select>
+        <span id="who" class="small" style="margin-left:auto"></span>
+        <button class="btn ghost" id="logout">Logout</button>
+      </div>
+
+      <form id="form" class="card" style="background:transparent;border:none;box-shadow:none;margin:0 0 10px 0">
+        <div class="in" style="padding:0">
+          <input type="hidden" id="id">
+          <div class="row">
+            <div><label>Title</label><input id="title" required></div>
+            <div><label>Due</label><input id="due" type="datetime-local"></div>
+          </div>
+          <div><label>Description</label><textarea id="desc"></textarea></div>
+          <div style="margin-top:8px"><button class="btn primary">Save</button> <button class="btn ghost" type="button" id="cancel" hidden>Cancel</button></div>
+        </div>
+      </form>
+
+      <div id="list" class="list"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const API = '';
+let token=null, me=null;
+
+function $ (id){ return document.getElementById(id); }
+function setMsg(t){ $('msg').textContent=t; }
+
+async function api(path, opts={}){
+  const res = await fetch(API+path, { ...opts, headers: { 'Content-Type':'application/json', ...(token? {Authorization:`Bearer ${token}`} : {}) } });
+  if(!res.ok){ const e=await res.json().catch(()=>({error:'request failed'})); throw new Error(e.error||'request failed'); }
+  return res.json();
+}
+
+$('signup').onclick = async ()=>{
+  try{
+    const name=$('name').value.trim(), email=$('email').value.trim(), password=$('password').value;
+    await api('/api/auth/register',{ method:'POST', body:JSON.stringify({name,email,password}) });
+    setMsg('Signed up. Now login.');
+  }catch(e){ setMsg('⚠️ '+e.message); }
+};
+$('login').onclick = async ()=>{
+  try{
+    const name=$('name').value.trim(), email=$('email').value.trim(), password=$('password').value;
+    if(!name) return setMsg('Name required to log in');
+    const r=await api('/api/auth/login',{ method:'POST', body:JSON.stringify({name,email,password}) });
+    token=r.token; me=r.user; localStorage.setItem('ttm.session', JSON.stringify(r));
+    $('auth').style.display='none'; $('app').style.display='block'; $('who').textContent='Logged in as '+me.name;
+    load();
+  }catch(e){ setMsg('⚠️ '+e.message); }
+};
+
+(function resume(){
+  try{
+    const s=localStorage.getItem('ttm.session');
+    if(!s) return; const r=JSON.parse(s);
+    token=r.token; me=r.user; if(token){ $('auth').style.display='none'; $('app').style.display='block'; $('who').textContent='Logged in as '+me.name; load(); }
+  }catch{}
+})();
+$('logout').onclick=()=>{ token=null; me=null; localStorage.removeItem('ttm.session'); $('app').style.display='none'; $('auth').style.display='block'; };
+
+function parseDT(s){ if(!s) return null; const [d,t]=s.split('T'); const [y,m,day]=d.split('-').map(Number); const [hh,mm]=(t||'').split(':').map(Number); return new Date(y,(m||1)-1,day||1,hh||0,mm||0).getTime(); }
+function fmt(ts){ if(!ts) return 'No due date'; const d=new Date(ts); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}` }
+
+async function load(){
+  const status=$('flt').value; const q = status==='all'? '' : ('?status='+encodeURIComponent(status));
+  const r = await api('/api/tasks'+q); render(r.tasks||[]);
+}
+$('flt').onchange=load;
+
+function render(items){
+  const box=$('list'); box.innerHTML='';
+  if(!items.length){ box.innerHTML='<div class="small">No tasks</div>'; return; }
+  for(const t of items){
+    const row=document.createElement('div'); row.className='item';
+    const left=document.createElement('div'); left.innerHTML='<input type=\"checkbox\" '+(t.status==='completed'?'checked':'')+' />'; left.firstChild.onchange=()=> patch(t.id,{status:left.firstChild.checked?'completed':'pending'});
+    const mid=document.createElement('div'); mid.innerHTML='<div><strong>'+t.title+'</strong></div><div class="small">'+(t.due? fmt(t.due):'No due date')+'</div>'+ (t.description? '<div class="small">'+t.description+'</div>':'');
+    const right=document.createElement('div'); const e=document.createElement('button'); e.className='btn ghost'; e.textContent='Edit'; e.onclick=()=>startEdit(t); const d=document.createElement('button'); d.className='btn ghost'; d.textContent='Delete'; d.onclick=()=>del(t.id); right.append(e,d);
+    row.append(left,mid,right); box.append(row);
+  }
+}
+
+async function patch(id, payload){ await api('/api/tasks/'+id,{ method:'PATCH', body:JSON.stringify(payload)}); load(); }
+async function del(id){ if(!confirm('Delete this task?')) return; await api('/api/tasks/'+id,{ method:'DELETE'}); load(); }
+
+$('form').onsubmit = async (e)=>{
+  e.preventDefault();
+  const id=$('id').value;
+  const payload={ title:$('title').value.trim(), description:$('desc').value.trim(), due:(function(){ const s=$('due').value; if(!s) return null; const ms=parseDT(s); return Number.isFinite(ms)? ms : null; })() };
+  if(id) await api('/api/tasks/'+id,{ method:'PATCH', body:JSON.stringify(payload)});
+  else await api('/api/tasks',{ method:'POST', body:JSON.stringify(payload)});
+  $('form').reset(); $('cancel').hidden=true; $('id').value=''; load();
+};
+function startEdit(t){ $('id').value=t.id; $('title').value=t.title; $('desc').value=t.description||''; $('due').value = t.due? new Date(t.due).toISOString().slice(0,16):''; $('cancel').hidden=false; }
+$('cancel').onclick=()=>{ $('form').reset(); $('id').value=''; $('cancel').hidden=true; };
+</script>
+</body>
+</html>
