@@ -1,9 +1,0 @@
-node_modules/
-.DS_Store
-.env
-Backend/team.db*
-*.sqlite*
-*.db
-# logs
-*.log
-*-server.log
