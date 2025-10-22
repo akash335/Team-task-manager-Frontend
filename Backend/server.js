@@ -12,6 +12,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 app.use(cors());
+app.options('*', cors());
 app.use(express.json());
 
 // serve frontend (Frontend/public)
