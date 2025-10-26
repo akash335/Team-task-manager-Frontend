@@ -1,15 +1,27 @@
-import React from "react";
-import AuthCard from "./components/AuthCard.jsx";
-import TaskBoard from "./components/TaskBoard.jsx";
+import React, { useState } from "react";
+import AuthCard from "./components/AuthCard";
+import TaskBoard from "./components/TaskBoard";
 
 export default function App() {
+  const [token, setToken] = useState(localStorage.getItem("token"));
+
+  function handleLogin(tok) {
+    localStorage.setItem("token", tok);
+    setToken(tok);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    setToken(null);
+  }
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-3xl font-bold mb-6">Team Task Manager</h1>
-      <div className="flex flex-col gap-6 w-full max-w-md">
-        <AuthCard />
-        <TaskBoard />
-      </div>
+    <div className="flex items-center justify-center min-h-screen px-4">
+      {!token ? (
+        <AuthCard onAuthed={handleLogin} />
+      ) : (
+        <TaskBoard token={token} onLogout={handleLogout} />
+      )}
     </div>
   );
 }

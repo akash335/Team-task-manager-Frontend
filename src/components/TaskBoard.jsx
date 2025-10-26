@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api } from "../api";
 
@@ -19,25 +19,50 @@ export default function TaskBoard({ token, onLogout }) {
 
   async function createTask() {
     if (!title.trim()) return;
-    await api("/tasks", "POST", { title }, token);
-    setTitle("");
-    load();
+    try {
+      await api("/tasks", "POST", { title }, token);
+      setTitle("");
+      load();
+    } catch (e) {
+      setErr(e.message || "Task creation failed");
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">My Tasks</h2>
-        <button className="px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700" onClick={onLogout}>Logout</button>
+        <button
+          className="px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700"
+          onClick={onLogout}
+        >
+          Logout
+        </button>
       </div>
 
       <div className="flex gap-2 mb-4">
-        <input className="input flex-1" value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="New task title" />
-        <button className="btn" onClick={createTask}>Create</button>
-        <button className="px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700" onClick={load}>Refresh</button>
+        <input
+          className="input flex-1"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="New task title"
+        />
+        <button className="btn" onClick={createTask}>
+          Create
+        </button>
+        <button
+          className="px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700"
+          onClick={load}
+        >
+          Refresh
+        </button>
       </div>
+
       {err && <p className="text-rose-600 text-sm mb-3">{err}</p>}
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -51,7 +76,9 @@ export default function TaskBoard({ token, onLogout }) {
           >
             <div className="text-sm text-slate-500">{t.status}</div>
             <div className="font-semibold">{t.title}</div>
-            {t.description && <div className="text-sm mt-1">{t.description}</div>}
+            {t.description && (
+              <div className="text-sm mt-1">{t.description}</div>
+            )}
           </motion.div>
         ))}
       </div>
