@@ -1,10 +1,22 @@
-const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, ''); // trim trailing /
+// Get base API URL from environment (e.g. .env.local)
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, ''); // Trim trailing '/'
+
+// Unified API helper
 export async function api(path, opts = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  
+  const res = await fetch(`${API_BASE}${cleanPath}`, {
+    headers: { 
+      'Content-Type': 'application/json', 
+      ...(opts.headers || {}) 
+    },
     ...opts,
   });
-  if (!res.ok) throw new Error(await res.text());
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Request failed: ${res.status}`);
+  }
+
   return res.json();
 }
-// usage: api('/register', { method: 'POST', body: JSON.stringify(data) })
