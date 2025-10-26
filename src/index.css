@@ -3,18 +3,17 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-900 text-white flex items-center justify-center min-h-screen;
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-.card {
-  @apply bg-slate-800 text-white rounded-2xl shadow-lg border border-slate-700;
+  @apply bg-slate-900 text-white;
 }
 
 .input {
-  @apply w-full px-3 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  @apply w-full px-3 py-2 rounded-xl bg-slate-800 text-white border border-slate-600 outline-none;
 }
 
 .btn {
-  @apply bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium;
+  @apply px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold;
+}
+
+.card {
+  @apply bg-slate-800 rounded-2xl shadow-lg;
 }

@@ -1,24 +1,24 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import AuthCard from "./components/AuthCard";
 import TaskBoard from "./components/TaskBoard";
 
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
 
-  function handleLogin(tok) {
-    localStorage.setItem("token", tok);
-    setToken(tok);
+  function handleAuthed(newToken) {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
   }
 
   function handleLogout() {
     localStorage.removeItem("token");
-    setToken(null);
+    setToken("");
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white px-4">
       {!token ? (
-        <AuthCard onAuthed={handleLogin} />
+        <AuthCard onAuthed={handleAuthed} />
       ) : (
         <TaskBoard token={token} onLogout={handleLogout} />
       )}
